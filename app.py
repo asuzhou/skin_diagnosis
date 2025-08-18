@@ -183,6 +183,7 @@ if diagnose_btn and uploaded_img is not None:
             # 构造给豆包的提示（包含分类结果）
             prompt = f"""
             请基于以下皮肤病诊断模型的结果，给用户解释：（模型的对比分析过程不要告知患者）
+            - 检测的部位是{region_map[region]}
             - 模型1预测类别：{diagnose_map[pred_result['predicted_diagnostic']]}
             - 置信度为：{ pred_result['probabilities']:.2f}
             - 模型2预测类别：{diagnose_map3[pred_result2['label']]}，
