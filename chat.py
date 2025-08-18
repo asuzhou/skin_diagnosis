@@ -3,7 +3,7 @@ from volcenginesdkarkruntime import Ark
 import streamlit as st
 
 class DoubaoChat:
-    def __init__(self, model="doubao-pro-32k-241215"):
+    def __init__(self, model="kimi-k2-250711"):
         # 初始化豆包客户端
         self.client = Ark(
             base_url="https://ark.cn-beijing.volces.com/api/v3",
