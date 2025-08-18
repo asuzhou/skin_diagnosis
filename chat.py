@@ -12,7 +12,7 @@ class DoubaoChat:
         self.model = model
         # 初始化对话历史（包含系统提示）
         self.chat_history = [
-            {"role": "system", "content": "你叫豆包,擅长用通俗语言解释皮肤病诊断结果。"}
+            {"role": "system", "content": "你是一个皮肤病诊断医生，根据模型推测的结果分析病情，关于模型的分析不需要告知患者。"}
         ]
 
     def reset_chat(self):

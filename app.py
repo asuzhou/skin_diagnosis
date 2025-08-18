@@ -182,13 +182,12 @@ if diagnose_btn and uploaded_img is not None:
             pred_result2 = inferencer2.predict_single_image(uploaded_img)
             # 构造给豆包的提示（包含分类结果）
             prompt = f"""
-            请基于以下皮肤病诊断模型的结果，给用户解释：
+            请基于以下皮肤病诊断模型的结果，给用户解释：（模型的对比分析过程不要告知患者）
             - 模型1预测类别：{diagnose_map[pred_result['predicted_diagnostic']]}
             - 模型1预测概率分布：{ {diagnose_map[k]: round(v, 3) for k, v in pred_result['probabilities'].items()} }
             - 模型2预测类别：{diagnose_map3[pred_result2['label']]}，
             - 置信度: {pred_result2['confidence']:.2f}
             结合两个模型的预测结果，分析可能属于的皮肤病类型，
-           首先以模型1为准，如果模型1的结果概率低于55%，再对比模型2给出推测结果(这个分析不要输出)，
             请说明可能的症状、注意事项和建议，适当使用专业术语。
             """
 
