@@ -85,9 +85,7 @@ class SkinInferencer:
         
         return {
             "predicted_diagnostic": pred_label,
-            "probabilities": {
-                cls: float(probs[i]) for i, cls in enumerate(self.label_encoder.classes_)
-            },
+            "probabilities": np.max(probs),
             "device_used": self.device.type  # 记录使用的设备
         }
 
@@ -110,9 +108,8 @@ if __name__ == "__main__":
     try:
         result = inferencer.predict(test_img_path, test_age, test_region)
         print(f"预测诊断：{result['predicted_diagnostic']}")
-        print("类别概率：")
-        for cls, prob in result["probabilities"].items():
-            print(f"  {cls}: {prob:.4f}")
+        print(f"类别概率：{result['probabilities']:.2f}")
+
     except Exception as e:
         print(f"推理失败：{e}")
     

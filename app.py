@@ -184,7 +184,7 @@ if diagnose_btn and uploaded_img is not None:
             prompt = f"""
             请基于以下皮肤病诊断模型的结果，给用户解释：（模型的对比分析过程不要告知患者）
             - 模型1预测类别：{diagnose_map[pred_result['predicted_diagnostic']]}
-            - 模型1预测概率分布：{ {diagnose_map[k]: round(v, 3) for k, v in pred_result['probabilities'].items()} }
+            - 置信度为：{ pred_result['probabilities']:.2f}
             - 模型2预测类别：{diagnose_map3[pred_result2['label']]}，
             - 置信度: {pred_result2['confidence']:.2f}
             结合两个模型的预测结果，分析可能属于的皮肤病类型，
