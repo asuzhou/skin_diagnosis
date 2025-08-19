@@ -178,18 +178,22 @@ if diagnose_btn and uploaded_img is not None:
 
         # 2. 调用分类模型获取诊断结果
         with st.spinner("正在分析图像..."):
-            pred_result = inferencer.predict(uploaded_img, age, region_map[region])  # 注意：这里需要修改infer.py的predict方法支持直接传入UploadedFile
+            pred_result = inferencer.predict(uploaded_img, age, region_map[region])
             pred_result2 = inferencer2.predict_single_image(uploaded_img)
+            pred_result3 = inferencer3.predict_single_image(uploaded_img)
             # 构造给豆包的提示（包含分类结果）
             prompt = f"""
             请基于以下皮肤病诊断模型的结果，给用户解释：（模型的对比分析过程不要告知患者）
             - 检测的部位是{region_map[region]}
+            - 患者的年龄是{age}
             - 模型1预测类别：{diagnose_map[pred_result['predicted_diagnostic']]}
             - 置信度为：{ pred_result['probabilities']:.2f}
             - 模型2预测类别：{diagnose_map3[pred_result2['label']]}，
             - 置信度: {pred_result2['confidence']:.2f}
-            结合两个模型的预测结果，分析可能属于的皮肤病类型，
-            请说明可能的症状、注意事项和建议，适当使用专业术语。
+            - 模型3预测类别：{diagnose_map2[pred_result3['label']]}，
+            - 置信度: {pred_result3['confidence']:.2f}
+            结合三个模型的预测结果，分析可能属于的皮肤病类型，
+            请说明可能的症状、注意事项和建议，适当使用专业术语，最后给出推荐的护肤品类型。
             """
 
         # 3. 调用豆包API并流式输出结果
