@@ -192,7 +192,7 @@ if diagnose_btn and uploaded_img is not None:
             - 置信度: {pred_result2['confidence']:.2f}
             - 模型3预测类别：{diagnose_map2[pred_result3['label']]}，
             - 置信度: {pred_result3['confidence']:.2f}
-            结合三个模型的预测结果，分析可能属于的皮肤病类型，
+            结合三个模型的预测结果，注意病变类型的包含关系，分析可能属于的皮肤病类型，
             请说明可能的症状、注意事项和建议，适当使用专业术语，最后给出推荐的护肤品类型。
             """
 
