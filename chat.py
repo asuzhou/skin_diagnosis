@@ -3,7 +3,14 @@ from volcenginesdkarkruntime import Ark
 import streamlit as st
 
 class DoubaoChat:
-    def __init__(self, model="kimi-k2-250711"):
+    def __init__(self, model="doubao-pro-32k-241215"):
+        '''
+        kimi-k2-250711
+        doubao-pro-32k-241215
+        doubao-pro-4k-240515
+        deepseek-r1-250528
+        doubao-1-5-lite-32k-250115
+        '''
         # 初始化豆包客户端
         self.client = Ark(
             base_url="https://ark.cn-beijing.volces.com/api/v3",
@@ -14,6 +21,7 @@ class DoubaoChat:
         self.chat_history = [
             {"role": "system", "content": "你是一个皮肤病诊断医生，根据模型推测的结果分析病情，关于模型的分析不需要告知患者。"}
         ]
+        self.json_text=''
 
     def reset_chat(self):
         """重置对话历史（保留系统提示）"""
@@ -41,11 +49,17 @@ class DoubaoChat:
 
         # 收集模型响应（用于更新对话历史）
         full_response = ""
+        json_flag=False
+        self.json_text=""
         for chunk in stream:
             if chunk.choices and chunk.choices[0].delta.content:
                 content = chunk.choices[0].delta.content
-                full_response += content
-                yield content  # 流式返回每一段内容
-
+                if ('json' in content) or ('```json' in content) or json_flag:
+                    json_flag=True  
+                    self.json_text += content
+                else:
+                    full_response += content
+                    yield content  # 流式返回每一段内容
+                
         # 将模型响应添加到对话历史（维护上下文）
         self.chat_history.append({"role": "assistant", "content": full_response})

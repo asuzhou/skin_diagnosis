@@ -149,6 +149,7 @@ with st.sidebar:
           "耳部", "背部", "足部", "腹部", "唇部"]
     )
     supplement = st.text_input('补充信息',value=None)
+    show_right_sidebar = st.checkbox("是否需要护肤品推荐", value=False)
     diagnose_btn = st.button("开始诊断", use_container_width=True)
     reset_btn = st.button("重置对话", use_container_width=True)
 
@@ -168,75 +169,96 @@ for msg in st.session_state["messages"]:
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
 
+#右侧边栏
+if show_right_sidebar:
+    # 显示右侧边栏：主内容区与右侧边栏按比例分配
+    main_content, right_sidebar = st.columns([3, 1])
+    
+    # 右侧边栏内容
+    with right_sidebar:
+        st.header("护肤品推荐")
+else:
+    # 不显示右侧边栏：主内容区占满整个宽度
+    main_content = st.container()  # 用容器模拟单列布局
+
 # 诊断逻辑
-if diagnose_btn and uploaded_img is not None:
-    try:
-        # 1. 显示上传的图片
-        image = Image.open(uploaded_img).convert("RGB")
+with main_content:
+    if diagnose_btn and uploaded_img is not None:
+        try:
+            # 1. 显示上传的图片
+            image = Image.open(uploaded_img).convert("RGB")
+            with st.chat_message("user"):
+                st.image(image, caption="上传的图像", width=300)
+                st.write(f"年龄：{age}，病变区域：{region}")
+
+            # 2. 调用分类模型获取诊断结果
+            with st.spinner("正在分析图像..."):
+                pred_result = inferencer.predict(uploaded_img, age, region_map[region])
+                pred_result2 = inferencer2.predict_single_image(uploaded_img)
+                pred_result3 = inferencer3.predict_single_image(uploaded_img)
+                # 构造给豆包的提示（包含分类结果）
+                prompt = f"""
+                请基于以下皮肤病诊断模型的结果，给用户解释：（模型的对比分析过程不要告知患者）
+                - 检测的部位是{region_map[region]}
+                - 患者的年龄是{age}
+                - 患者的描述是{supplement}
+                - 模型1预测类别：{diagnose_map[pred_result['predicted_diagnostic']]}
+                - 置信度为：{ pred_result['probabilities']:.2f}
+                - 模型2预测类别：{diagnose_map3[pred_result2['label']]}，
+                - 置信度: {pred_result2['confidence']:.2f}
+                - 模型3预测类别：{diagnose_map2[pred_result3['label']]}，
+                - 置信度: {pred_result3['confidence']:.2f}
+                结合三个模型的预测结果，注意病变类型的包含关系，分析可能属于的皮肤病类型，
+                请说明可能的症状、注意事项和建议，适当使用专业术语。
+                - 最后给出json格式的2-5类护肤品推荐，和上面的内容有明确分界，换行后以'```json'开头
+                格式要求键为“recommended_skincare”，值为列表，每个元素含“name”“type”“efficacy”“forbidden_ingredients”字段。
+                """
+
+            # 3. 调用豆包API并流式输出结果
+            with st.chat_message("assistant"):
+                # 创建一个占位符用于动态更新内容
+                message_placeholder = st.empty()
+                full_response = ""
+                # 流式获取响应并更新界面
+                for chunk in doubao_chat.stream_chat(prompt):
+                    full_response += chunk
+                    message_placeholder.markdown(full_response + "▌")  # 显示光标动画
+                # 最终替换为完整响应（去除光标）
+                message_placeholder.markdown(full_response)
+            
+            #侧边栏显示
+            with right_sidebar:
+                st.text(doubao_chat.json_text)
+
+            # 4. 保存对话到会话状态
+            st.session_state["messages"].append({
+                "role": "user",
+                "content": f"上传了图像（年龄：{age}，区域：{region}）"
+            })
+            st.session_state["messages"].append({
+                "role": "assistant",
+                "content": full_response
+            })
+
+        except Exception as e:
+            st.error(f"处理失败：{str(e)}")
+
+    # 支持后续对话（用户可继续提问）
+    if user_input := st.chat_input("有其他问题请提问..."):
+        # 显示用户输入
         with st.chat_message("user"):
-            st.image(image, caption="上传的图像", width=300)
-            st.write(f"年龄：{age}，病变区域：{region}")
+            st.write(user_input)
+        st.session_state["messages"].append({"role": "user", "content": user_input})
 
-        # 2. 调用分类模型获取诊断结果
-        with st.spinner("正在分析图像..."):
-            pred_result = inferencer.predict(uploaded_img, age, region_map[region])
-            pred_result2 = inferencer2.predict_single_image(uploaded_img)
-            pred_result3 = inferencer3.predict_single_image(uploaded_img)
-            # 构造给豆包的提示（包含分类结果）
-            prompt = f"""
-            请基于以下皮肤病诊断模型的结果，给用户解释：（模型的对比分析过程不要告知患者）
-            - 检测的部位是{region_map[region]}
-            - 患者的年龄是{age}
-            - 患者的描述是{supplement}
-            - 模型1预测类别：{diagnose_map[pred_result['predicted_diagnostic']]}
-            - 置信度为：{ pred_result['probabilities']:.2f}
-            - 模型2预测类别：{diagnose_map3[pred_result2['label']]}，
-            - 置信度: {pred_result2['confidence']:.2f}
-            - 模型3预测类别：{diagnose_map2[pred_result3['label']]}，
-            - 置信度: {pred_result3['confidence']:.2f}
-            结合三个模型的预测结果，注意病变类型的包含关系，分析可能属于的皮肤病类型，
-            请说明可能的症状、注意事项和建议，适当使用专业术语。
-            - 最后给出json格式的2-5类护肤品推荐，格式要求键为“recommended_skincare”，值为列表，每个元素含“name”“type”“efficacy”“forbidden_ingredients”字段。
-            """
-
-        # 3. 调用豆包API并流式输出结果
+        # 流式获取豆包响应
         with st.chat_message("assistant"):
-            # 创建一个占位符用于动态更新内容
             message_placeholder = st.empty()
             full_response = ""
-            # 流式获取响应并更新界面
-            for chunk in doubao_chat.stream_chat(prompt):
+            for chunk in doubao_chat.stream_chat(user_input):
                 full_response += chunk
-                message_placeholder.markdown(full_response + "▌")  # 显示光标动画
-            # 最终替换为完整响应（去除光标）
+                message_placeholder.markdown(full_response + "▌")
             message_placeholder.markdown(full_response)
+        st.session_state["messages"].append({"role": "assistant", "content": full_response})
 
-        # 4. 保存对话到会话状态
-        st.session_state["messages"].append({
-            "role": "user",
-            "content": f"上传了图像（年龄：{age}，区域：{region}）"
-        })
-        st.session_state["messages"].append({
-            "role": "assistant",
-            "content": full_response
-        })
 
-    except Exception as e:
-        st.error(f"处理失败：{str(e)}")
-
-# 支持后续对话（用户可继续提问）
-if user_input := st.chat_input("有其他问题请提问..."):
-    # 显示用户输入
-    with st.chat_message("user"):
-        st.write(user_input)
-    st.session_state["messages"].append({"role": "user", "content": user_input})
-
-    # 流式获取豆包响应
-    with st.chat_message("assistant"):
-        message_placeholder = st.empty()
-        full_response = ""
-        for chunk in doubao_chat.stream_chat(user_input):
-            full_response += chunk
-            message_placeholder.markdown(full_response + "▌")
-        message_placeholder.markdown(full_response)
-    st.session_state["messages"].append({"role": "assistant", "content": full_response})
+#E:/Anaconda/envs/skin_env/python.exe -m streamlit run app.py
