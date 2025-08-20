@@ -49,7 +49,7 @@ class SkinDataset(Dataset):
         return len(self.df)
 
     def __getitem__(self, idx):
-        # 加载图像（代码不变）
+        # 加载图像
         img_name = self.df.iloc[idx]['img_id']
         img_path = os.path.join(self.img_dir, img_name)
         try:
@@ -60,7 +60,7 @@ class SkinDataset(Dataset):
         if self.transform:
             image = self.transform(image)
         
-        # 处理元数据（代码不变）
+        # 处理元数据
         meta_row = self.meta_data.iloc[idx:idx+1]
         if self.meta_preprocessor:
             meta_processed = self.meta_preprocessor.transform(meta_row)
@@ -68,7 +68,7 @@ class SkinDataset(Dataset):
             meta_processed = meta_row.values
         meta_tensor = torch.FloatTensor(meta_processed.ravel())
         
-        # 处理标签（关键修改：转换为long类型）
+        # 处理标签（转换为long类型）
         label = self.df.iloc[idx]['label']
         label_tensor = torch.tensor(label, dtype=torch.long)  # 显式指定dtype=torch.long
         
@@ -129,7 +129,7 @@ class FusionModel(nn.Module):
         self.image_backbone = mobilenet_v3_large(weights=MobileNet_V3_Large_Weights.IMAGENET1K_V2)
         
         # 主干特征提取（输出特征图）
-        self.backbone_features = self.image_backbone.features  # 关键：获取主干网络（输出三维特征图）
+        self.backbone_features = self.image_backbone.features  # 获取主干网络（输出三维特征图）
         
 
         # 全局平均池化（将特征图压缩为向量）
@@ -141,7 +141,7 @@ class FusionModel(nn.Module):
         )
         self.image_feature_dim = 1280  # MobileNetV3分类器前几层的输出维度固定为1280
         
-        # 元数据分支（保持不变）
+        # 元数据分支
         self.meta_mlp = nn.Sequential(
             nn.Linear(meta_feature_dim, 64),
             nn.ReLU(),
